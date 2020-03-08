@@ -49,11 +49,8 @@ defmodule ExMmog.Game.Actions.Attack do
     |> update_dead_players(dead_players)
   end
 
-  defp update_active_players(state, players) do
-    %{state | active_players: players}
-  end
+  defp update_active_players(state, players), do: %{state | active_players: players}
 
-  defp update_dead_players(state, players) do
-    %{state | dead_players: players ++ state.dead_players}
-  end
+  defp update_dead_players(state, players),
+    do: %{state | dead_players: players ++ state.dead_players}
 end

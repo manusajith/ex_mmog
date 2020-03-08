@@ -3,6 +3,7 @@ defmodule ExMmog.Game.Actions.Join do
   Helper module with functions which are used when a player joins the game.
   """
 
+  alias ExMmog.Board
   alias ExMmog.Game.State
 
   @doc """
@@ -21,10 +22,7 @@ defmodule ExMmog.Game.Actions.Join do
   end
 
   defp start_player_at_random_position(state, name) do
-    position =
-      state.board.walkable()
-      |> Enum.shuffle()
-      |> List.first()
+    position = Board.start(state.board)
 
     %{state | state: Map.put(state.state, name, position)}
   end

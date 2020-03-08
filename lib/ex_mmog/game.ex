@@ -5,12 +5,13 @@ defmodule ExMmog.Game do
 
   alias __MODULE__
   alias ExMmog.Game.State
-  alias ExMmog.Game.Actions.{Join, Move, Attack}
+  alias ExMmog.Game.Actions.{Join, Move, Attack, Cleanup}
 
   use GenServer, restart: :transient
 
   @timeout 60_000
   @hibernate_interval 60_000
+  @cleanup_interval 5_000
 
   defstruct state: %{},
             active_players: [],
@@ -99,8 +100,24 @@ defmodule ExMmog.Game do
   def init(args) do
     Process.flag(:trap_exit, true)
 
+    {cleanup_interval, _opts} = Keyword.pop(args, :cleanup_interval, @cleanup_interval)
+    :timer.send_interval(cleanup_interval, :cleanup)
+
     {state, _opts} = Keyword.pop(args, :state, %State{})
     {:ok, state, @timeout}
+  end
+
+  @doc false
+  @impl true
+  def handle_info(:cleanup, state) do
+    case state.dead_players do
+      [] ->
+        {:noreply, state, @timeout}
+
+      _ ->
+        state = Cleanup.perform(state)
+        {:noreply, state, @timeout}
+    end
   end
 
   @doc false

@@ -24,6 +24,16 @@ defmodule ExMmog.Board do
   end
 
   @doc """
+  Returns the starting position for a player in the board.
+  """
+  @spec start(atom | %{walkable: any}) :: any
+  def start(board \\ new()) do
+    board.walkable
+    |> Enum.shuffle()
+    |> List.first()
+  end
+
+  @doc """
   Takes a position and returns the neighbouring cells.
   """
   @spec neighbours({any, any}, any) :: any

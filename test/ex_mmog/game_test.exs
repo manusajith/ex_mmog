@@ -6,10 +6,12 @@ defmodule ExMmog.GameTest do
   alias ExMmog.Game
   alias ExMmog.Game.State
 
+  @cleanup_interval 500
+
   setup do
     pid =
       start_supervised!(Game,
-        start: {Game, :start_link, [[name: random_id()]]}
+        start: {Game, :start_link, [[name: random_id(), cleanup_interval: @cleanup_interval]]}
       )
 
     :erlang.trace(pid, true, [:receive])
@@ -105,6 +107,7 @@ defmodule ExMmog.GameTest do
       state = Game.attack(manu, pid)
       assert state == Game.view(pid)
       assert Enum.member?(state.dead_players, geralt)
+      refute Enum.member?(state.dead_players, manu)
 
       assert_received {:trace, ^pid, :receive, {_, {_, _}, {:join, manu}}}
       assert_received {:trace, ^pid, :receive, {_, {_, _}, {:join, geralt}}}
@@ -114,6 +117,13 @@ defmodule ExMmog.GameTest do
       assert_received {:trace, ^pid, :receive, {_, {_, _}, {:replace_state, _}}}
       assert_received {:trace, ^pid, :receive, {_, {_, _}, {:attack, manu}}}
       assert_received {:trace, ^pid, :receive, {_, {_, _}, :view}}
+
+      assert_receive {:trace, ^pid, :receive, :cleanup}, 600
+
+      state = Game.view(pid)
+      assert Enum.member?(state.active_players, geralt)
+      refute Enum.member?(state.dead_players, geralt)
+      refute geralt_new_position == Map.get(state.state, geralt)
     end
 
     test "handle_call(:pid, {:attack, player}, _from, state)", %{pid: pid, manu: manu} do
