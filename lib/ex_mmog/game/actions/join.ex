@@ -8,8 +8,8 @@ defmodule ExMmog.Game.Actions.Join do
   @doc """
   Takes a player name assigns a random position in the game.
   """
-  @spec perform(binary, State.t()) :: State.t()
-  def perform(name, state) when is_binary(name) and is_map(state) do
+  @spec perform(State.t(), binary) :: State.t()
+  def perform(state, name) when is_binary(name) and is_map(state) do
     with true <- name in state.active_players do
       state
     else

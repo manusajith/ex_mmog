@@ -5,7 +5,7 @@ defmodule ExMmog.Game do
 
   alias __MODULE__
   alias ExMmog.Game.State
-  alias ExMmog.Game.Actions.Join
+  alias ExMmog.Game.Actions.{Join, Move}
 
   use GenServer, restart: :transient
 
@@ -60,6 +60,24 @@ defmodule ExMmog.Game do
     GenServer.call(pid, {:join, name})
   end
 
+  @doc ~S"""
+  Move a player by one step in the specified direction, where direction could be `:up`, `:down`, `:right`, `:left`
+
+  ## Examples
+
+      iex(10)> ExMmog.Game.move("manu", :up)
+      iex(10)> ExMmog.Game.move("manu", :down)
+      iex(10)> ExMmog.Game.move("manu", :left)
+      iex(10)> ExMmog.Game.move("manu", :right)
+  """
+  @spec move(any, any, any) :: any
+  def move(player, position, pid \\ Game)
+  def move(player, :up, pid), do: GenServer.call(pid, {:move, player, :up})
+  def move(player, :down, pid), do: GenServer.call(pid, {:move, player, :down})
+  def move(player, :left, pid), do: GenServer.call(pid, {:move, player, :left})
+  def move(player, :right, pid), do: GenServer.call(pid, {:move, player, :right})
+  def move(_player, _, _pid), do: {:error, :bad_movement}
+
   @doc false
   @impl true
   @spec init(keyword) :: {:ok, any, 60000}
@@ -79,7 +97,15 @@ defmodule ExMmog.Game do
   @doc false
   @impl true
   def handle_call({:join, name}, _from, state) do
-    state = Join.perform(name, state)
+    state = Join.perform(state, name)
+    {:reply, state, state, @timeout}
+  end
+
+  @doc false
+  @impl true
+  def handle_call({:move, name, direction}, _from, state) do
+    state = Move.perform(state, name, direction)
+
     {:reply, state, state, @timeout}
   end
 end

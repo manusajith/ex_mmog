@@ -51,6 +51,24 @@ defmodule ExMmog.GameTest do
     end
   end
 
+  describe "move/3" do
+    setup [:manu]
+
+    test "when the movement is invalid", %{pid: pid, manu: manu} do
+      assert {:error, :bad_movement} == Game.move(manu, :nowhere, pid)
+    end
+
+    test "when player who joined the game makes a valid move", %{pid: pid, manu: manu} do
+      Game.join(manu, pid)
+      assert Game.move(manu, :left, pid) == Game.view(pid)
+    end
+
+    test "handle_call(:pid, {:move, player, :direction}, _from, state)", %{pid: pid, manu: manu} do
+      Game.move(manu, :left, pid)
+      assert_receive {:trace, ^pid, :receive, {_, {_, _}, {:move, manu, :left}}}
+    end
+  end
+
   defp manu(_context), do: [manu: "manu"]
 
   defp random_id do
