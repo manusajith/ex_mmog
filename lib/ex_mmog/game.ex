@@ -5,17 +5,16 @@ defmodule ExMmog.Game do
 
   alias __MODULE__
   alias ExMmog.Game.State
+  alias ExMmog.Game.Actions.Join
 
   use GenServer, restart: :transient
 
   @timeout 60_000
   @hibernate_interval 60_000
 
-
   defstruct state: %{},
             active_players: [],
             dead_players: []
-
 
   @doc ~S"""
   Starts the game server with a specified state.
@@ -47,6 +46,20 @@ defmodule ExMmog.Game do
     GenServer.call(pid, :view)
   end
 
+  @doc ~S"""
+  Register a player into the game.
+
+  Takes a player name and assigns a random position in the board.
+
+
+  ## Examples
+      iex> GameEngine.Game.join("manu")
+  """
+  @spec join(binary, atom | pid | {atom, any} | {:via, atom, any}) :: any
+  def join(name, pid \\ Game) when is_binary(name) do
+    GenServer.call(pid, {:join, name})
+  end
+
   @doc false
   @impl true
   @spec init(keyword) :: {:ok, any, 60000}
@@ -60,6 +73,13 @@ defmodule ExMmog.Game do
   @doc false
   @impl true
   def handle_call(:view, _from, state) do
+    {:reply, state, state, @timeout}
+  end
+
+  @doc false
+  @impl true
+  def handle_call({:join, name}, _from, state) do
+    state = Join.perform(name, state)
     {:reply, state, state, @timeout}
   end
 end

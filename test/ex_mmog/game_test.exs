@@ -1,5 +1,6 @@
 defmodule ExMmog.GameTest do
   use ExUnit.Case, async: true
+
   # doctest ExMmog.Game
 
   alias ExMmog.Game
@@ -26,6 +27,31 @@ defmodule ExMmog.GameTest do
       assert_receive {:trace, ^pid, :receive, {_, {_, _}, :view}}
     end
   end
+
+  describe "join/2" do
+    setup [:manu]
+
+    test "player joins the game", %{pid: pid, manu: manu} do
+      state = Game.join(manu, pid)
+
+      assert length(state.active_players) == 1
+      assert Enum.member?(state.active_players, manu)
+    end
+
+    test "player who is already joined tries to join again", %{pid: pid, manu: manu} do
+      state = Game.join(manu, pid)
+      new_state = Game.join(manu, pid)
+
+      assert new_state == state
+    end
+
+    test "handle_call(:pid, {:join, player}, _from, state)", %{pid: pid, manu: manu} do
+      Game.join(manu, pid)
+      assert_receive {:trace, ^pid, :receive, {_, {_, _}, {:join, manu}}}
+    end
+  end
+
+  defp manu(_context), do: [manu: "manu"]
 
   defp random_id do
     alphabet = Enum.to_list(?a..?z) ++ Enum.to_list(?0..?9)

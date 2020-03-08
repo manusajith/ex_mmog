@@ -6,7 +6,7 @@ defmodule ExMmog.Game.State do
   alias __MODULE__
   alias ExMmog.Board
 
-  defstruct board: Board.new,
+  defstruct board: Board.new(),
             state: %{},
             active_players: [],
             dead_players: []
