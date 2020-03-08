@@ -28,7 +28,23 @@ defmodule ExMmog.Game do
   @spec start_link(keyword) :: :ignore | {:error, any} | {:ok, pid}
   def start_link(opts) do
     {name, init_args} = Keyword.pop(opts, :name, Game)
-    GenServer.start_link(__MODULE__, init_args, name: name, hibernate_after: @hibernate_interval)
+    GenServer.start_link(Game, init_args, name: name, hibernate_after: @hibernate_interval)
+  end
+
+  @doc ~S"""
+  View the current state of the game.
+
+  ## Return
+
+  - map: With status of game `%ExMmog.Game.State{}`
+
+  ## Examples
+
+      iex> ExMmog.Game.view
+  """
+  @spec view(atom | pid | {atom, any} | {:via, atom, any}) :: any
+  def view(pid \\ Game) do
+    GenServer.call(pid, :view)
   end
 
   @doc false
@@ -39,5 +55,11 @@ defmodule ExMmog.Game do
 
     {state, _opts} = Keyword.pop(args, :state, %State{})
     {:ok, state, @timeout}
+  end
+
+  @doc false
+  @impl true
+  def handle_call(:view, _from, state) do
+    {:reply, state, state, @timeout}
   end
 end
