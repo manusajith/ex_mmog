@@ -23,6 +23,27 @@ defmodule ExMmog.Board do
     end
   end
 
+  @doc """
+  Takes a position and returns the neighbouring cells.
+  """
+  @spec neighbours({any, any}, any) :: any
+  def neighbours({row, col}, board \\ new().all) do
+    find_neighbours(row, col, board)
+  end
+
+  @doc """
+  Takes a position and checks whether the position is a valid position on the board.
+  """
+  def valid_position?({row, _column}, _board) when row < 0, do: {:error, :bad_position}
+  def valid_position?({_row, column}, _board) when column < 0, do: {:error, :bad_position}
+
+  def valid_position?({row, column}, board) do
+    case MapSet.member?(board.walkable, {row, column}) do
+      true -> {:ok, {row, column}}
+      false -> {:error, :bad_position}
+    end
+  end
+
   defp build_grid(row_size, col_size) do
     for col <- 0..col_size,
         row <- 0..row_size,
@@ -35,5 +56,20 @@ defmodule ExMmog.Board do
     |> Enum.shuffle()
     |> Enum.take(10)
     |> MapSet.new()
+  end
+
+  defp find_neighbours(row, col, board) do
+    Enum.reduce(0..8, [], fn direction, cells ->
+      neighbours = do_find_neighbours(row, col, direction)
+      [neighbours | cells]
+    end)
+    |> Enum.filter(&MapSet.member?(board, &1))
+  end
+
+  defp do_find_neighbours(row, col, direction) do
+    n_row = row + (rem(direction, 3) - 1)
+    n_col = col + (div(direction, 3) - 1)
+
+    {n_row, n_col}
   end
 end

@@ -69,10 +69,71 @@ defmodule ExMmog.GameTest do
     end
   end
 
+  describe "attack/2" do
+    setup [:manu]
+
+    test "when a player not in game tries to perform an attact action", %{pid: pid} do
+      {status, reason, state} = Game.attack("geralt", pid)
+      assert status == :error
+      assert reason == :player_not_active
+      assert state == Game.view(pid)
+    end
+
+    test "when a valid player performs an attack", %{pid: pid, manu: manu} do
+      Game.join(manu, pid)
+      state = Game.attack(manu, pid)
+      assert state == Game.view(pid)
+    end
+
+    test "when a valid player performs an attack which makes other players dead", %{
+      pid: pid,
+      manu: manu
+    } do
+      geralt = "geralt"
+
+      Game.join(manu, pid)
+      Game.join("geralt", pid)
+
+      state = Game.view(pid)
+      assert Game.view(pid) == state
+
+      {row, col} = state.state |> Map.get(manu)
+
+      geralt_new_position = {row + 1, col + 1}
+      teleport_player_to(geralt, geralt_new_position, pid)
+
+      state = Game.attack(manu, pid)
+      assert state == Game.view(pid)
+      assert Enum.member?(state.dead_players, geralt)
+
+      assert_received {:trace, ^pid, :receive, {_, {_, _}, {:join, manu}}}
+      assert_received {:trace, ^pid, :receive, {_, {_, _}, {:join, geralt}}}
+      assert_received {:trace, ^pid, :receive, {_, {_, _}, :view}}
+      assert_received {:trace, ^pid, :receive, {_, {_, _}, :view}}
+      assert_received {:trace, ^pid, :receive, {_, {_, _}, :get_state}}
+      assert_received {:trace, ^pid, :receive, {_, {_, _}, {:replace_state, _}}}
+      assert_received {:trace, ^pid, :receive, {_, {_, _}, {:attack, manu}}}
+      assert_received {:trace, ^pid, :receive, {_, {_, _}, :view}}
+    end
+
+    test "handle_call(:pid, {:attack, player}, _from, state)", %{pid: pid, manu: manu} do
+      Game.attack(manu, pid)
+      assert_receive {:trace, ^pid, :receive, {_, {_, _}, {:attack, manu}}}
+    end
+  end
+
   defp manu(_context), do: [manu: "manu"]
 
   defp random_id do
     alphabet = Enum.to_list(?a..?z) ++ Enum.to_list(?0..?9)
     Enum.take_random(alphabet, 5) |> to_string() |> String.to_atom()
+  end
+
+  defp teleport_player_to(player, position, pid) do
+    updated_game_state =
+      :sys.get_state(pid).state
+      |> Map.put(player, position)
+
+    :sys.replace_state(pid, fn state -> %{state | state: updated_game_state} end)
   end
 end

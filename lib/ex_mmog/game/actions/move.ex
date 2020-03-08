@@ -3,6 +3,8 @@ defmodule ExMmog.Game.Actions.Move do
   Helper module with functions which are used to move the player around in the game.
   """
 
+  alias ExMmog.Board
+
   @doc """
   Takes a player name, and direction and move the player in the board.
   """
@@ -30,7 +32,7 @@ defmodule ExMmog.Game.Actions.Move do
   defp do_move_to(position, :left, board), do: do_move_to(position, 0, -1, board)
 
   defp do_move_to({row, column}, row_offset, column_offset, board) do
-    case valid_position?({row + row_offset, column + column_offset}, board) do
+    case Board.valid_position?({row + row_offset, column + column_offset}, board) do
       {:error, reason} ->
         {:error, reason}
 
@@ -41,15 +43,5 @@ defmodule ExMmog.Game.Actions.Move do
 
   defp update_state(state, name, position) do
     %{state | state: Map.put(state.state, name, position)}
-  end
-
-  defp valid_position?({row, _column}, _board) when row < 0, do: {:error, :bad_position}
-  defp valid_position?({_row, column}, _board) when column < 0, do: {:error, :bad_position}
-
-  defp valid_position?({row, column}, board) do
-    case MapSet.member?(board.walkable, {row, column}) do
-      true -> {:ok, {row, column}}
-      false -> {:error, :bad_position}
-    end
   end
 end

@@ -5,7 +5,7 @@ defmodule ExMmog.Game do
 
   alias __MODULE__
   alias ExMmog.Game.State
-  alias ExMmog.Game.Actions.{Join, Move}
+  alias ExMmog.Game.Actions.{Join, Move, Attack}
 
   use GenServer, restart: :transient
 
@@ -78,6 +78,21 @@ defmodule ExMmog.Game do
   def move(player, :right, pid), do: GenServer.call(pid, {:move, player, :right})
   def move(_player, _, _pid), do: {:error, :bad_movement}
 
+  @doc ~S"""
+  Attacks other players who are in one step radius of the players position.
+
+  When players are present in the radius of the player
+  they are removed from `active_players` and moved to `dead_players` state.
+
+  ## Examples
+
+      iex> ExMmog.Game.attack("manu")
+  """
+  @spec attack(any, atom | pid | {atom, any} | {:via, atom, any}) :: any
+  def attack(name, pid \\ Game) do
+    GenServer.call(pid, {:attack, name})
+  end
+
   @doc false
   @impl true
   @spec init(keyword) :: {:ok, any, 60000}
@@ -104,8 +119,24 @@ defmodule ExMmog.Game do
   @doc false
   @impl true
   def handle_call({:move, name, direction}, _from, state) do
-    state = Move.perform(state, name, direction)
+    case updated_state = Move.perform(state, name, direction) do
+      {:error, reason} ->
+        {:reply, {:error, reason, state}, state, @timeout}
 
-    {:reply, state, state, @timeout}
+      _ ->
+        {:reply, updated_state, updated_state, @timeout}
+    end
+  end
+
+  @doc false
+  @impl true
+  def handle_call({:attack, name}, _from, state) do
+    case update_state = Attack.perform(state, name) do
+      {:error, reason} ->
+        {:reply, {:error, reason, state}, state, @timeout}
+
+      _ ->
+        {:reply, update_state, update_state, @timeout}
+    end
   end
 end
