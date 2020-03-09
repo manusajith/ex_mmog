@@ -4,14 +4,17 @@ defmodule ExMmog.Game do
   """
 
   alias __MODULE__
-  alias ExMmog.Game.State
+  alias ExMmog.Game.{Actions, State, Players}
   alias ExMmog.Game.Actions.{Join, Move, Attack, Cleanup}
 
   use GenServer, restart: :transient
 
   @timeout 60_000
   @hibernate_interval 60_000
-  @cleanup_interval 5_000
+  @cleanup_interval 10_000
+  @topic inspect(__MODULE__)
+
+  @behaviour Actions
 
   defstruct state: %{},
             active_players: [],
@@ -42,6 +45,7 @@ defmodule ExMmog.Game do
 
       iex> ExMmog.Game.view
   """
+  @impl true
   @spec view(atom | pid | {atom, any} | {:via, atom, any}) :: any
   def view(pid \\ Game) do
     GenServer.call(pid, :view)
@@ -56,6 +60,7 @@ defmodule ExMmog.Game do
   ## Examples
       iex> GameEngine.Game.join("manu")
   """
+  @impl true
   @spec join(binary, atom | pid | {atom, any} | {:via, atom, any}) :: any
   def join(name, pid \\ Game) when is_binary(name) do
     GenServer.call(pid, {:join, name})
@@ -71,6 +76,7 @@ defmodule ExMmog.Game do
       iex(10)> ExMmog.Game.move("manu", :left)
       iex(10)> ExMmog.Game.move("manu", :right)
   """
+  @impl true
   @spec move(any, any, any) :: any
   def move(player, position, pid \\ Game)
   def move(player, :up, pid), do: GenServer.call(pid, {:move, player, :up})
@@ -89,9 +95,15 @@ defmodule ExMmog.Game do
 
       iex> ExMmog.Game.attack("manu")
   """
+  @impl true
   @spec attack(any, atom | pid | {atom, any} | {:via, atom, any}) :: any
   def attack(name, pid \\ Game) do
     GenServer.call(pid, {:attack, name})
+  end
+
+  @spec subscribe :: :ok | {:error, any}
+  def subscribe do
+    Phoenix.PubSub.subscribe(ExMmog.PubSub, @topic)
   end
 
   @doc false
@@ -115,7 +127,11 @@ defmodule ExMmog.Game do
         {:noreply, state, @timeout}
 
       _ ->
-        state = Cleanup.perform(state)
+        state =
+          %Cleanup{state: state, inactive_players: Players.inactive(state)}
+          |> Actions.Dispatch.perform()
+
+        notify_players([:players, :updated])
         {:noreply, state, @timeout}
     end
   end
@@ -129,14 +145,39 @@ defmodule ExMmog.Game do
   @doc false
   @impl true
   def handle_call({:join, name}, _from, state) do
-    state = Join.perform(state, name)
+    state =
+      %Join{state: state, name: name}
+      |> Actions.Dispatch.perform()
+
+    notify_players([:players, :updated])
     {:reply, state, state, @timeout}
   end
 
   @doc false
   @impl true
   def handle_call({:move, name, direction}, _from, state) do
-    case updated_state = Move.perform(state, name, direction) do
+    updated_state =
+      %Move{state: state, name: name, direction: direction}
+      |> Actions.Dispatch.perform()
+
+    case updated_state do
+      {:error, reason} ->
+        {:reply, {:error, reason, state}, state, @timeout}
+
+      _ ->
+        notify_players([:players, :updated])
+        {:reply, updated_state, updated_state, @timeout}
+    end
+  end
+
+  @doc false
+  @impl true
+  def handle_call({:attack, name}, _from, state) do
+    updated_state =
+      %Attack{state: state, name: name}
+      |> Actions.Dispatch.perform()
+
+    case updated_state do
       {:error, reason} ->
         {:reply, {:error, reason, state}, state, @timeout}
 
@@ -145,15 +186,8 @@ defmodule ExMmog.Game do
     end
   end
 
-  @doc false
-  @impl true
-  def handle_call({:attack, name}, _from, state) do
-    case update_state = Attack.perform(state, name) do
-      {:error, reason} ->
-        {:reply, {:error, reason, state}, state, @timeout}
-
-      _ ->
-        {:reply, update_state, update_state, @timeout}
-    end
+  defp notify_players(event) do
+    Phoenix.PubSub.broadcast(ExMmog.PubSub, @topic, {__MODULE__, event})
+    {:ok, event}
   end
 end

@@ -1,3 +1,21 @@
 /* This file is for your main application css. */
 
 @import "./phoenix.css";
+@import '../../deps/phoenix_live_view/assets/css/live_view.css';
+
+.board {
+  table-layout: fixed;
+}
+
+.board__wall {
+  background-color: black;
+}
+
+td {
+  border: 1px solid #cc3;
+  border-spacing: 0;
+  height: 5em;
+  width: 5em;
+  margin: 0;
+  padding: 0;
+}

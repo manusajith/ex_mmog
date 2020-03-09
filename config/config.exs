@@ -12,7 +12,10 @@ config :ex_mmog, ExMmogWeb.Endpoint,
   url: [host: "localhost"],
   secret_key_base: "mdAJxKEaGwUEd9xeiSuoPgDRYjhGR+RV2s4j57XL8dvQqXi3e5SjpK2DfJdKcw0c",
   render_errors: [view: ExMmogWeb.ErrorView, accepts: ~w(html json)],
-  pubsub: [name: ExMmog.PubSub, adapter: Phoenix.PubSub.PG2]
+  pubsub: [name: ExMmog.PubSub, adapter: Phoenix.PubSub.PG2],
+  live_view: [
+    signing_salt: "G2zBvZB0/PuENilAgrzTxA3Lqq97/0ur"
+  ]
 
 # Configures Elixir's Logger
 config :logger, :console,

@@ -17,7 +17,7 @@ defmodule ExMmog.Board do
   Takes the board row size and col size and returns a grid containing walls at random positions.
   """
   @spec new(any, any) :: ExMmog.Board.t()
-  def new(row_size \\ 20, col_size \\ 20) do
+  def new(row_size \\ 10, col_size \\ 10) do
     with all <- build_grid(row_size, col_size), walls <- build_walls(all) do
       %Board{all: all, walls: walls, walkable: MapSet.difference(all, walls)}
     end

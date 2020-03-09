@@ -23,6 +23,7 @@ defmodule ExMmogWeb do
 
       import Plug.Conn
       import ExMmogWeb.Gettext
+      import Phoenix.LiveView.Controller
       alias ExMmogWeb.Router.Helpers, as: Routes
     end
   end
@@ -41,6 +42,7 @@ defmodule ExMmogWeb do
 
       import ExMmogWeb.ErrorHelpers
       import ExMmogWeb.Gettext
+      import Phoenix.LiveView.Helpers
       alias ExMmogWeb.Router.Helpers, as: Routes
     end
   end
@@ -50,6 +52,7 @@ defmodule ExMmogWeb do
       use Phoenix.Router
       import Plug.Conn
       import Phoenix.Controller
+      import Phoenix.LiveView.Router
     end
   end
 

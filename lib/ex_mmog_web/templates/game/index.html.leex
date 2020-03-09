@@ -1,0 +1,22 @@
+<table class="board">
+  <%= for row <- 0..10 do %>
+    <tr>
+      <%= for col <- 0..10 do %>
+      <td class="<%= if is_wall?(assigns, {row, col}), do: 'board__wall' %>">
+      <%= players_at(assigns, {row, col}) %>
+      </td>
+      <% end %>
+    </tr>
+  <% end %>
+</table>
+
+
+<button phx-click="move" value="left">Left</button>
+
+<button phx-click="move" value="right">Right</button>
+
+<button phx-click="move" value="up">Up</button>
+
+<button phx-click="move" value="down">Down</button>
+
+<button phx-click="attack" value="attack">Attack</button>

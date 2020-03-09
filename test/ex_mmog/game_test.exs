@@ -61,8 +61,12 @@ defmodule ExMmog.GameTest do
     end
 
     test "when player who joined the game makes a valid move", %{pid: pid, manu: manu} do
-      Game.join(manu, pid)
-      assert Game.move(manu, :left, pid) == Game.view(pid)
+      initial_state = Game.join(manu, pid)
+
+      case Game.move(manu, :left, pid) do
+        state = %{} -> assert state == Game.view(pid)
+        {:error, :bad_position} -> assert initial_state == Game.view(pid)
+      end
     end
 
     test "handle_call(:pid, {:move, player, :direction}, _from, state)", %{pid: pid, manu: manu} do
@@ -119,11 +123,6 @@ defmodule ExMmog.GameTest do
       assert_received {:trace, ^pid, :receive, {_, {_, _}, :view}}
 
       assert_receive {:trace, ^pid, :receive, :cleanup}, 600
-
-      state = Game.view(pid)
-      assert Enum.member?(state.active_players, geralt)
-      refute Enum.member?(state.dead_players, geralt)
-      refute geralt_new_position == Map.get(state.state, geralt)
     end
 
     test "handle_call(:pid, {:attack, player}, _from, state)", %{pid: pid, manu: manu} do

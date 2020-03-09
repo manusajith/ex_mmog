@@ -7,16 +7,12 @@ defmodule ExMmog.Application do
 
   @spec start(any, any) :: {:error, any} | {:ok, pid}
   def start(_type, _args) do
-    # List all child processes to be supervised
     children = [
-      # Start the endpoint when the application starts
-      ExMmogWeb.Endpoint
-      # Starts a worker by calling: ExMmog.Worker.start_link(arg)
-      # {ExMmog.Worker, arg},
+      ExMmogWeb.Endpoint,
+      ExMmogWeb.Presence,
+      {ExMmog.Game, [name: ExMmog.Game]}
     ]
 
-    # See https://hexdocs.pm/elixir/Supervisor.html
-    # for other strategies and supported options
     opts = [strategy: :one_for_one, name: ExMmog.Supervisor]
     Supervisor.start_link(children, opts)
   end
