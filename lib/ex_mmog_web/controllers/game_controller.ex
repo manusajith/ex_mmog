@@ -3,6 +3,7 @@ defmodule ExMmogWeb.GameController do
 
   alias ExMmog.Game
 
+  @spec index(Plug.Conn.t(), any) :: Plug.Conn.t()
   def index(conn, %{"name" => name}) do
     game_server_pid = GenServer.whereis(Game)
     GenServer.call(game_server_pid, {:join, name})

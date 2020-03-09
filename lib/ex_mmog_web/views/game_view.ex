@@ -1,10 +1,12 @@
 defmodule ExMmogWeb.GameView do
   use ExMmogWeb, :view
 
+  @spec is_wall?(atom | %{state: atom | %{board: atom | %{walls: any}}}, any) :: boolean
   def is_wall?(assigns, position) do
     position in assigns.state.board.walls
   end
 
+  @spec players_at(atom | %{state: atom | %{state: any}}, any) :: binary | [any]
   def players_at(assigns, current_position) do
     assigns.state.state
     |> Enum.reduce([], fn {name, position}, players ->

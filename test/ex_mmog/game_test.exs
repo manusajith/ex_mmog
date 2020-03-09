@@ -65,7 +65,7 @@ defmodule ExMmog.GameTest do
 
       case Game.move(manu, :left, pid) do
         state = %{} -> assert state == Game.view(pid)
-        {:error, :bad_position} -> assert initial_state == Game.view(pid)
+        {:error, :bad_position, _} -> assert initial_state == Game.view(pid)
       end
     end
 
