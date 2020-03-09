@@ -17,5 +17,6 @@ defmodule ExMmogWeb.Router do
     pipe_through :browser
 
     get "/game", GameController, :index
+    get "/*path", GameController, :index
   end
 end

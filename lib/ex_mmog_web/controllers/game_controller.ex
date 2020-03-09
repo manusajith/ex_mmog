@@ -5,9 +5,15 @@ defmodule ExMmogWeb.GameController do
 
   @spec index(Plug.Conn.t(), any) :: Plug.Conn.t()
   def index(conn, %{"name" => name}) do
-    game_server_pid = GenServer.whereis(Game)
-    GenServer.call(game_server_pid, {:join, name})
-    session = %{"game_server_pid" => game_server_pid, "player_name" => name}
+    server_name = ("game_server_" <> name) |> String.to_atom()
+
+    case DynamicSupervisor.start_child(ExMmog.Game.Supervisor, {Game, [name: server_name]}) do
+      {:ok, pid} -> pid
+      {:error, {:already_started, pid}} -> pid
+    end
+
+    GenServer.call({:global, server_name}, {:join, name})
+    session = %{"game_server_pid" => server_name, "player_name" => name}
 
     conn
     |> live_render(ExMmogWeb.GameLive, session: session)

@@ -31,7 +31,11 @@ defmodule ExMmog.Game do
   @spec start_link(keyword) :: :ignore | {:error, any} | {:ok, pid}
   def start_link(opts) do
     {name, init_args} = Keyword.pop(opts, :name, Game)
-    GenServer.start_link(Game, init_args, name: name, hibernate_after: @hibernate_interval)
+
+    GenServer.start_link(Game, init_args,
+      name: {:global, name},
+      hibernate_after: @hibernate_interval
+    )
   end
 
   @doc ~S"""
@@ -108,15 +112,29 @@ defmodule ExMmog.Game do
 
   @doc false
   @impl true
-  @spec init(keyword) :: {:ok, any, 60000}
+  @spec init(keyword) :: {:ok, any, {:continue, :load_game_state}}
   def init(args) do
     Process.flag(:trap_exit, true)
 
     {cleanup_interval, _opts} = Keyword.pop(args, :cleanup_interval, @cleanup_interval)
+
     :timer.send_interval(cleanup_interval, :cleanup)
 
     {state, _opts} = Keyword.pop(args, :state, %State{})
-    {:ok, state, @timeout}
+    {:ok, state, {:continue, :load_game_state}}
+  end
+
+  @doc false
+  @impl true
+  def handle_cast(:synchronized, _state) do
+    {:state, state} = :ets.lookup(:game_state, :state) |> List.first()
+    {:noreply, state}
+  end
+
+  @doc false
+  @impl true
+  def handle_info(:timeout, state) do
+    {:noreply, state}
   end
 
   @doc false
@@ -131,7 +149,7 @@ defmodule ExMmog.Game do
           %Cleanup{state: state, inactive_players: Players.inactive(state)}
           |> Actions.Dispatch.perform()
 
-        notify_players([:players, :updated])
+        synchronize(state)
         {:noreply, state, @timeout}
     end
   end
@@ -149,7 +167,7 @@ defmodule ExMmog.Game do
       %Join{state: state, name: name}
       |> Actions.Dispatch.perform()
 
-    notify_players([:players, :updated])
+    synchronize(state)
     {:reply, state, state, @timeout}
   end
 
@@ -165,7 +183,7 @@ defmodule ExMmog.Game do
         {:reply, {:error, reason, state}, state, @timeout}
 
       _ ->
-        notify_players([:players, :updated])
+        synchronize(updated_state)
         {:reply, updated_state, updated_state, @timeout}
     end
   end
@@ -186,8 +204,14 @@ defmodule ExMmog.Game do
     end
   end
 
-  defp notify_players(event) do
-    Phoenix.PubSub.broadcast(ExMmog.PubSub, @topic, {__MODULE__, event})
-    {:ok, event}
+  @impl true
+  @spec handle_continue(:load_game_state, any) :: {:noreply, [tuple]}
+  def handle_continue(:load_game_state, _state) do
+    {:state, state} = :ets.lookup(:game_state, :state) |> List.first()
+    {:noreply, state}
+  end
+
+  defp synchronize(state) do
+    GenServer.cast({:global, ExMmog.Server}, {:synchronize, state})
   end
 end

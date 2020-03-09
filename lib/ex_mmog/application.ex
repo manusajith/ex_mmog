@@ -10,6 +10,8 @@ defmodule ExMmog.Application do
     children = [
       ExMmogWeb.Endpoint,
       ExMmogWeb.Presence,
+      {ExMmog.Server, []},
+      {DynamicSupervisor, name: ExMmog.Game.Supervisor, strategy: :one_for_one},
       {ExMmog.Game, [name: ExMmog.Game]}
     ]
 

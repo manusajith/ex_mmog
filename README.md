@@ -30,12 +30,17 @@ enemy is dead, it should be distinguishable from others.
 - Every 5 seconds all dead heroes are removed (and randomly re-spawned if the player is still
   playing the game)
 
+### TODO
+
+- UI/UX improvements. tidy up and style the board.
+- Highlight your hero.
+- Animations when your here is attacked.
 
 ### Get started
 
   #### Prerequisites
 
-  Assuming you have (asdf-vm)[https://github.com/asdf-vm/asdf] installed.
+  Assuming you have [asdf](https://github.com/asdf-vm/asdf) installed.
 
   ```
   asdf install elixir 1.10.0
@@ -69,3 +74,9 @@ enemy is dead, it should be distinguishable from others.
   * Start Phoenix endpoint with `mix phx.server`
 
 Now you can visit [`localhost:4000`](http://localhost:4000) from your browser.
+
+### Deployment.
+
+Deployments are handled using elixir releases, and app is deployed to Gigalixir.
+
+To view the app, visit the [link](https://fussy-yearly-carp.gigalixirapp.com/)
